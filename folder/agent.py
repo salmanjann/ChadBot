@@ -8,7 +8,7 @@ from dotenv import load_dotenv, find_dotenv
 _ = load_dotenv(find_dotenv())  # read local .env file
 
 
-os.environ["OPENAI_API_KEY"] = ""
+os.environ["OPENAI_API_KEY"] = "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"
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
 from langchain.vectorstores import Chroma
@@ -28,9 +28,10 @@ from langchain.llms import OpenAI
 
 from pydantic import BaseModel
 
-persist_directory = "docs/chroma1/"
+""" persist_directory = "docs/chroma1/"
 embedding = OpenAIEmbeddings()
-mydb = Chroma(persist_directory=persist_directory, embedding_function=embedding)
+mydb = Chroma(persist_directory=persist_directory, embedding_function=embedding)"""
+
 import pandas as pd
 
 df = pd.read_csv("data.csv")
@@ -38,7 +39,7 @@ df = pd.read_csv("data.csv")
 col = df.columns
 mylist = []
 
-
+"""
 for l in range(1, len(df)):
     stn = ""
     k = 1
@@ -58,7 +59,7 @@ def vectordb(ques: str = ""):
     s = ""
     for i in doc:
         s = s + i.page_content
-    return s
+    return s """
 
 
 llm = OpenAI(temperature=0)
@@ -80,7 +81,7 @@ n = 10  # number of messages to hold in conversation history
 
 conversation_stages = [
     "Introduction: Greet the user and inquire about their specific product interest, mobile phone model they are interested in, or mobile phone requirements.",
-    "Solution Presentation: Elaborate on the mobile phone's data fetched from the database. Provide advice about the product, pros and cons, compare it with other mobile phones, as fits the user's message/query.",
+    "Solution Presentation: Elaborate on the mobile phone's data fetched from the database. Provide advice about the product, pros and cons, compare it with other mobile phones, give purchase advice, as fits the user's message/query.",
     "Courteous Farewell: Thank the user for using the platform and encourage them to return for any future inquiries or assistance.",
     "Out of scope message: The user is taking the conversation outside the 'mobile phone' domain, remind them that you are strictly a phone expert and can only converse about that. However, if they're making small talk, indulge them a little while reminding them of your actual prupose as a phone expert.",
 ]
@@ -179,24 +180,34 @@ def run_conversation(prompt_two, recent_messages):
     return result
 
 
+data_from_vector_db = """
+    Name	Brand	Model	Battery capacity (mAh)	Screen size (inches)	Touchscreen	Resolution x	Resolution y	Processor	RAM (MB)	Internal storage (GB)	Rear camera	Front camera	Operating system	Wi-Fi	Bluetooth	GPS	Number of SIMs	3G	4G/ LTE	Price:
+1) Samsung Galaxy Note 10+	Samsung	Galaxy Note 10+	4300	6.8	Yes	1440	3040	8	12000	256	12	10	Android	Yes	Yes	Yes	2	Yes	Yes	79699
+2) Asus ROG Phone 2	Asus	ROG Phone 2	6000	6.59	Yes	1080	2340	8	8000	128	48	24	Android	Yes	Yes	Yes	1	Yes	Yes	37999
+"""
+db_count = 0
+result = ""
+
+
 def process_input(user_input):
     global agent_executor
     global conversation_history
     global recent_messages
     global conversation_stages
     global conversation_stage
+    global data_from_vector_db
+    global db_count
+    global result
 
-    db_count = 0
-    data_from_vector_db = ""
-    while True:
-        user_input = input("User: ")
-        add_message("User: " + user_input + "\n")
+    # while True:
+    # user_input = input("User: ")
+    add_message("User: " + user_input + "\n")
 
-        if db_count < 3:
-            db_count += 1
-            data_from_vector_db = data_from_vector_db + "|" + vectordb(user_input)
+    """ if db_count < 3:
+        db_count += 1
+        data_from_vector_db = data_from_vector_db + "|" + vectordb(user_input) """
 
-        prompt_one = f"""Following is a list of conversation stages and a conversation history.
+    prompt_one = f"""Following is a list of conversation stages and a conversation history.
 Use the conversation history to decide the next immediate stage of a 'mobile phone advisory conversation' which the mobile phone expert should proceed to.
 
 Only answer with a number between '1' and '8' with a best guess of what stage should the conversation continue with.
@@ -205,16 +216,16 @@ Do not answer anything else nor add anything to your answer.
 Conversation Stages:
 1. Introduction: If this is the mobile phone experts's first message, then pick this stage.
 2. Detailed Solution Presentation: If the conversation history has sufficient information about the user's mobile phone requirements and preferences, then pick this stage.
-3. Closure and Courteous Farewell: If the conversation history shows that the user is ending the conversation, or that the conversation is taking an uncomfortable route, then pick this stage.
+3. Closure and Courteous Farewell: If the conversation history shows that the user is ending the conversation, or the user has no more questions, then pick this stage.
 4. Out of scope question: If the latest user message is taking the conversation outside the 'mobile phone assistance' domain, then pick this stage.
 
 Conversation History:
 {"".join(recent_messages)}
 
 """
-        conversation_stage = int(determine_stage(prompt_one, recent_messages))
+    conversation_stage = int(determine_stage(prompt_one, recent_messages))
 
-        prompt_two = f"""You are a Mobile Phone Expert Customer Support Agent.
+    prompt_two = f"""You are a Mobile Phone Expert Customer Support Agent.
 A user/customer has contacted you to talk about and seek advice about a mobile phone they are interested in.
 Your end goal is to attempt to help them navigate their thoughts and decide the best mobile phone for them. You are provided with
 specific data from a database about the phone the user is interested in. When making factual statements about that model, you will ONLY
@@ -234,27 +245,24 @@ Current conversation stage:
 
 Mobile Phone Expert:
 """
-        # print(prompt_two)
-        """ if conversation_stage == 2:
-            search_result = agent_executor.invoke(
-                {
-                    "input": f"Conversation History: {'<END_OF_TURN>'.join(recent_messages)}"
-                }
-            )
-            search_result = search_result["output"]
-            search_result = (
-                "Mobile Phone Expert: Thank you for your patience! I ran a quick search and here's what I found: "
-                + search_result
-                + "\n"
-            )
-            add_message(search_result)
-            print(search_result) """
+    # print(prompt_two)
+    """ if conversation_stage == 2:
+        search_result = agent_executor.invoke(
+            {
+                "input": f"Conversation History: {'<END_OF_TURN>'.join(recent_messages)}"
+            }
+        )
+        search_result = search_result["output"]
+        search_result = (
+            "Mobile Phone Expert: Thank you for your patience! I ran a quick search and here's what I found: "
+            + search_result
+            + "\n"
+        )
+        add_message(search_result)
+        print(search_result) """
 
-        result = run_conversation(prompt_two, recent_messages)
-        text = text + result
-        print("Mobile Phone Expert: " + result)
+    result = run_conversation(prompt_two, recent_messages)
 
-    return text
+    print("Mobile Phone Expert: " + result)
 
-
-process_input()
+    return result

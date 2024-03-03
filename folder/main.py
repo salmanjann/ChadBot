@@ -6,7 +6,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import json
 
-from agent import process_input
+from agent import *
+
+# from agent import process_input
 
 app = FastAPI()
 
